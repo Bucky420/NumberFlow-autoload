@@ -64,8 +64,8 @@ namespace CatlikeCoding.NumberFlow {
 
         private void run()
         {
+	    Process();
             FillRows();
-            Process();
         }
 
         public bool done()
