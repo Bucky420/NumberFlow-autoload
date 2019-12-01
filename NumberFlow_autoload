@@ -1,0 +1,96 @@
+using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+using UnityEditor;
+using System.Threading;
+using System.Threading.Tasks;
+
+namespace CatlikeCoding.NumberFlow
+{
+    [ExecuteInEditMode]
+    public class NumberFlow_autoload : MonoBehaviour
+    {
+        public static List<DiagramMaterialLink> links = new List<DiagramMaterialLink>();
+        void Start()
+        {
+            Debug.Log("Loading.......");
+            string[] guids = AssetDatabase.FindAssets("t:Diagram");
+
+            foreach (string i in guids)
+            {
+                string path = AssetDatabase.GUIDToAssetPath(i);
+                System.Type a = AssetDatabase.GetMainAssetTypeAtPath(path);
+                if (a != typeof(Diagram)) continue;
+                Diagram d = (Diagram)AssetDatabase.LoadAssetAtPath(path, typeof(Diagram));
+                string[] l = AssetDatabase.GetLabels(d);
+                if (l.Length == 0) return;
+                string[] guid = AssetDatabase.FindAssets("l:" + l[0]);
+                string m = AssetDatabase.GUIDToAssetPath(guid[0]);
+                Debug.Log("info: " + m);
+                //Material mat = (Material)Resources.Load(m);
+                Material mat = (Material)AssetDatabase.LoadAssetAtPath(m, typeof(Material));
+                Debug.Log("Linking ... " + path);
+                DiagramMaterialLink link = new DiagramMaterialLink(d, mat);
+                Debug.Log("Done - " + path);
+            }
+        }
+
+        
+        void Update()
+        {
+            List<DiagramMaterialLink> r = new List<DiagramMaterialLink>();
+            foreach (DiagramMaterialLink i in links)
+            {
+                if (i.done())
+                {
+                    Debug.Log("Finnished thread....");
+                    r.Add(i);
+                }
+            }
+
+            foreach (DiagramMaterialLink i in r )
+            {
+                links.Remove(i);
+            }
+
+        }
+
+
+    }
+
+#if UNITY_EDITOR
+    public class NumberFlow_editor2 : AssetPostprocessor
+    {
+
+        void OnPreprocessAsset()
+        {
+            string path = assetPath;
+            Diagram d;
+            // Material m;
+            System.Type t = AssetDatabase.GetMainAssetTypeAtPath(path);
+
+            if (t == typeof(Diagram))
+            {
+                d = (Diagram)AssetDatabase.LoadAssetAtPath(path, typeof(Diagram));
+                string[] l = AssetDatabase.GetLabels(d);
+                if (l.Length == 0) return;
+                Debug.Log(l);
+                string[] guid = AssetDatabase.FindAssets("l:" + l[0]);
+                Debug.Log("info: " + AssetDatabase.GUIDToAssetPath(guid[0]));
+                string m = AssetDatabase.GUIDToAssetPath(guid[0]);
+                Debug.Log("info: " + m);
+                //Material mat = (Material)Resources.Load(m,typeof(Material));
+                Material mat = AssetDatabase.LoadAssetAtPath(m, typeof(Material)) as Material;
+                Debug.Log(AssetDatabase.GetLabels(mat)[0]);
+                Debug.Log("Linking ... " + path);
+                DiagramMaterialLink link = new DiagramMaterialLink(d, mat);
+                Debug.Log("added - " + path);
+                NumberFlow_autoload.links.Add(link); 
+            }
+        }
+    }
+#endif
+
+}
+
+
